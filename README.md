@@ -1,3 +1,5 @@
+# Macrotask [![Build Status](https://travis-ci.org/calvinmetcalf/macrotask.svg)](https://travis-ci.org/calvinmetcalf/macrotask)
+
 [![testling status](https://ci.testling.com/calvinmetcalf/macrotask.png)](https://ci.testling.com/calvinmetcalf/macrotask)
 
 `npm install macrotask`
