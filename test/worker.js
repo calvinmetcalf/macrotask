@@ -1,7 +1,7 @@
-importScripts('../dist/immediate.js');
-self.onmessage =function (e) {
+importScripts('../dist/macrotask.js');
+self.onmessage = function (e) {
   if (e.data === 'ping') {
-    immediate(function () {
+    macrotask(function () {
       self.postMessage('pong');
     });
   }

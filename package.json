@@ -1,6 +1,6 @@
 {
   "name": "macrotask",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "A cross browser macrotask library",
   "contributors": [
     "Domenic Denicola <domenic@domenicdenicola.com> (http://domenicdenicola.com)",
