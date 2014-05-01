@@ -24,17 +24,17 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/calvinmetcalf/immediate.git"
+    "url": "git://github.com/calvinmetcalf/macrotask.git"
   },
   "browser": {
     "./lib/nextTick.js": "./lib/fakeNextTick.js"
   },
-  "bugs": "https://github.com/calvinmetcalf/immediate/issues",
+  "bugs": "https://github.com/calvinmetcalf/macrotask/issues",
   "main": "lib/index.js",
   "scripts": {
     "build": "npm run build-js && npm run uglify",
-    "uglify": "uglifyjs dist/immediate.js -mc > dist/immediate.min.js",
-    "build-js": "browserify -s immediate ./lib/index.js > dist/immediate.js",
+    "uglify": "uglifyjs dist/macrotask.js -mc > dist/macrotask.min.js",
+    "build-js": "browserify -s macrotask ./lib/index.js > dist/macrotask.js",
     "test": "jshint lib/*.js && node test/tests.js && browserify test/tests.js | testling"
   },
   "devDependencies": {
@@ -45,6 +45,6 @@
     "browserify": "^3.32.1"
   },
   "jam": {
-    "main": "dist/immediate.js"
+    "main": "dist/macrotask.js"
   }
 }

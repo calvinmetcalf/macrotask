@@ -2,12 +2,12 @@
   "name": "macrotask",
   "version": "2.7.0",
   "description": "A cross browser macrotask library",
-  "homepage": "https://github.com/calvinmetcalf/immediate",
+  "homepage": "https://github.com/calvinmetcalf/macrotask",
   "authors": [
     "Domenic Denicola <domenic@domenicdenicola.com> (http://domenicdenicola.com)",
     "Donavon West <github@donavon.com> (http://donavon.com)",
     "Yaffle",
     "Calvin Metcalf <calvin.metcalf@gmail.com>"
   ],
-  "main": "dist/immediate.js"
+  "main": "dist/macrotask.js"
 }
