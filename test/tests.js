@@ -1,8 +1,8 @@
 var test = require('tape');
-var immediate = require("../lib");
+var macrotask = require("../dist/macrotask.cjs.js");
 
 test("Handlers do execute", function (t) {
-    immediate(function () {
+    macrotask.run(function () {
         t.ok(true, 'handler executed');
         t.end();
     });
@@ -16,7 +16,7 @@ test("Handlers do not execute in the same event loop turn as the call to `setImm
         t.end();
     }
 
-    immediate(handler);
+    macrotask.run(handler);
     t.notOk(handlerCalled);
 });
 
@@ -28,7 +28,7 @@ test("passes through an argument to the handler", function (t) {
         t.end();
     }
 
-    immediate(handler, expectedArg);
+    macrotask.run(handler, expectedArg);
 });
 
 test("passes through two arguments to the handler", function (t) {
@@ -41,7 +41,7 @@ test("passes through two arguments to the handler", function (t) {
         t.end();
     }
 
-    immediate(handler, expectedArg1, expectedArg2);
+    macrotask.run(handler, expectedArg1, expectedArg2);
 });
 
 test("witin the same event loop turn prevents the handler from executing", function (t) {
@@ -50,8 +50,8 @@ test("witin the same event loop turn prevents the handler from executing", funct
         handlerCalled = true;
     }
 
-    var handle = immediate(handler);
-    immediate.clear(handle);
+    var handle = macrotask.run(handler);
+    macrotask.clear(handle);
 
     setTimeout(function () {
         t.notOk(handlerCalled);
@@ -66,11 +66,11 @@ test("does not interfere with handlers other than the one with ID passed to it",
         recordedArgs.push(arg);
     }
 
-    immediate(handler, "A");
-    immediate.clear(immediate(handler, "B"));
-    var handle = immediate(handler, "C");
-    immediate(handler, "D");
-    immediate.clear(handle);
+    macrotask.run(handler, "A");
+    macrotask.clear(macrotask.run(handler, "B"));
+    var handle = macrotask.run(handler, "C");
+    macrotask.run(handler, "D");
+    macrotask.clear(handle);
 
     setTimeout(function () {
         t.deepEqual(recordedArgs, expectedArgs);
@@ -87,10 +87,10 @@ test("big test", function (t) {
             t.ok(true, 'big one works');
             t.end();
         } else {
-            immediate(doStuff);
+            macrotask.run(doStuff);
         }
     }
-    immediate(doStuff);
+    macrotask.run(doStuff);
 });
 if (process.browser && typeof Worker !== 'undefined') {
   test("worker", function (t) {

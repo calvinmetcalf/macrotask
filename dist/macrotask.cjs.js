@@ -1,3 +1,7 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
 const test = () => !process.browser && global && typeof global.setImmediate === 'function';
 
 const install = func => () => global.setImmediate(func);
@@ -354,5 +358,6 @@ function clear (token) {
   return false;
 }
 
-export { run, clear };
-//# sourceMappingURL=macrotask.js.map
+exports.run = run;
+exports.clear = clear;
+//# sourceMappingURL=macrotask.cjs.js.map
