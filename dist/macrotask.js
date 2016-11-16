@@ -14,7 +14,7 @@ var setImmediate = Object.freeze({
 
 var Mutation = global.MutationObserver || global.WebKitMutationObserver;
 
-const test$1 = () => Mutation;
+const test$1 = () => Mutation && !(global.navigator && global.navigator.standalone) && !global.cordova;
 
 function install$1(handle) {
   var called = 0;

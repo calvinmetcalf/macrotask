@@ -1,22 +1,11 @@
-(function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-  typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (factory((global.macrotask = global.macrotask || {})));
-}(this, (function (exports) { 'use strict';
+'use strict';
 
-var global$1 = typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};
+Object.defineProperty(exports, '__esModule', { value: true });
 
-var browser = true;
+const test = () => !process.browser && global && typeof global.setImmediate === 'function';
 
-var test = function test() {
-  return !browser && global$1 && typeof global$1.setImmediate === 'function';
-};
+const install = func => () => global.setImmediate(func);
 
-var install = function install(func) {
-  return function () {
-    return global$1.setImmediate(func);
-  };
-};
 
 var setImmediate = Object.freeze({
 	test: test,
@@ -27,23 +16,22 @@ var setImmediate = Object.freeze({
 //license https://github.com/tildeio/rsvp.js/blob/master/LICENSE
 //https://github.com/tildeio/rsvp.js/blob/master/lib/rsvp/asap.js
 
-var Mutation = global$1.MutationObserver || global$1.WebKitMutationObserver;
+var Mutation = global.MutationObserver || global.WebKitMutationObserver;
 
-var test$1 = function test$1() {
-  return Mutation;
-};
+const test$1 = () => Mutation && !(global.navigator && global.navigator.standalone) && !global.cordova;
 
 function install$1(handle) {
   var called = 0;
   var observer = new Mutation(handle);
-  var element = global$1.document.createTextNode('');
+  var element = global.document.createTextNode('');
   observer.observe(element, {
     characterData: true
   });
   return function () {
-    element.data = called = ++called % 2;
+    element.data = (called = ++called % 2);
   };
 }
+
 
 var mutation = Object.freeze({
 	test: test$1,
@@ -54,41 +42,42 @@ var mutation = Object.freeze({
 // where `global.postMessage` means something completely different and can't be used for this purpose.
 
 function test$2() {
-  if (!global$1.postMessage || global$1.importScripts) {
+  if (!global.postMessage || global.importScripts) {
     return false;
   }
-  if (global$1.setImmediate) {
+  if (global.setImmediate) {
     // we can only get here in IE10
     // which doesn't handel postMessage well
     return false;
   }
   var postMessageIsAsynchronous = true;
-  var oldOnMessage = global$1.onmessage;
-  global$1.onmessage = function () {
+  var oldOnMessage = global.onmessage;
+  global.onmessage = function () {
     postMessageIsAsynchronous = false;
   };
-  global$1.postMessage('', '*');
-  global$1.onmessage = oldOnMessage;
+  global.postMessage('', '*');
+  global.onmessage = oldOnMessage;
 
   return postMessageIsAsynchronous;
 }
 
-function install$2(func) {
+function install$2 (func) {
   var codeWord = 'com.calvinmetcalf.setImmediate' + Math.random();
   function globalMessage(event) {
-    if (event.source === global$1 && event.data === codeWord) {
+    if (event.source === global && event.data === codeWord) {
       func();
     }
   }
-  if (global$1.addEventListener) {
-    global$1.addEventListener('message', globalMessage, false);
+  if (global.addEventListener) {
+    global.addEventListener('message', globalMessage, false);
   } else {
-    global$1.attachEvent('onmessage', globalMessage);
+    global.attachEvent('onmessage', globalMessage);
   }
   return function () {
-    global$1.postMessage(codeWord, '*');
+    global.postMessage(codeWord, '*');
   };
 }
+
 
 var postMessage = Object.freeze({
 	test: test$2,
@@ -96,37 +85,36 @@ var postMessage = Object.freeze({
 });
 
 function test$3() {
-  if (global$1.setImmediate) {
+  if (global.setImmediate) {
     // we can only get here in IE10
     // which doesn't handel postMessage well
     return false;
   }
-  return typeof global$1.MessageChannel !== 'undefined';
+  return typeof global.MessageChannel !== 'undefined';
 }
 
 function install$3(func) {
-  var channel = new global$1.MessageChannel();
+  var channel = new global.MessageChannel();
   channel.port1.onmessage = func;
   return function () {
     channel.port2.postMessage(0);
   };
 }
 
+
 var messageChannel = Object.freeze({
 	test: test$3,
 	install: install$3
 });
 
-var test$4 = function test$4() {
-  return 'document' in global$1 && 'onreadystatechange' in global$1.document.createElement('script');
-};
+const test$4 = () =>
+  'document' in global && 'onreadystatechange' in global.document.createElement('script');
 
-var install$4 = function install$4(handle) {
-  return function () {
+const install$4 = handle => function () {
 
     // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
     // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-    var scriptEl = global$1.document.createElement('script');
+    var scriptEl = global.document.createElement('script');
     scriptEl.onreadystatechange = function () {
       handle();
 
@@ -134,20 +122,18 @@ var install$4 = function install$4(handle) {
       scriptEl.parentNode.removeChild(scriptEl);
       scriptEl = null;
     };
-    global$1.document.documentElement.appendChild(scriptEl);
+    global.document.documentElement.appendChild(scriptEl);
 
     return handle;
   };
-};
+
 
 var stateChange = Object.freeze({
 	test: test$4,
 	install: install$4
 });
 
-var test$5 = function test$5() {
-  return true;
-};
+const test$5 =  () => true;
 
 function install$5(t) {
   return function () {
@@ -155,463 +141,192 @@ function install$5(t) {
   };
 }
 
+
 var timeout = Object.freeze({
 	test: test$5,
 	install: install$5
 });
 
-var types = [setImmediate, mutation, postMessage, messageChannel, stateChange, timeout];
+var types = [
+  setImmediate,
+  mutation,
+  postMessage,
+  messageChannel,
+  stateChange,
+  timeout
+];
 var creatNextTick = function (drainQueue) {
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
-
-  try {
-    for (var _iterator = types[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var type = _step.value;
-
-      if (type.test()) {
-        return type.install(drainQueue);
-      }
-    }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
+  for (let type of types) {
+    if (type.test()) {
+      return type.install(drainQueue);
     }
   }
 };
 
-var asyncGenerator = function () {
-  function AwaitValue(value) {
-    this.value = value;
-  }
-
-  function AsyncGenerator(gen) {
-    var front, back;
-
-    function send(key, arg) {
-      return new Promise(function (resolve, reject) {
-        var request = {
-          key: key,
-          arg: arg,
-          resolve: resolve,
-          reject: reject,
-          next: null
-        };
-
-        if (back) {
-          back = back.next = request;
-        } else {
-          front = back = request;
-          resume(key, arg);
-        }
-      });
-    }
-
-    function resume(key, arg) {
-      try {
-        var result = gen[key](arg);
-        var value = result.value;
-
-        if (value instanceof AwaitValue) {
-          Promise.resolve(value.value).then(function (arg) {
-            resume("next", arg);
-          }, function (arg) {
-            resume("throw", arg);
-          });
-        } else {
-          settle(result.done ? "return" : "normal", result.value);
-        }
-      } catch (err) {
-        settle("throw", err);
-      }
-    }
-
-    function settle(type, value) {
-      switch (type) {
-        case "return":
-          front.resolve({
-            value: value,
-            done: true
-          });
-          break;
-
-        case "throw":
-          front.reject(value);
-          break;
-
-        default:
-          front.resolve({
-            value: value,
-            done: false
-          });
-          break;
-      }
-
-      front = front.next;
-
-      if (front) {
-        resume(front.key, front.arg);
-      } else {
-        back = null;
-      }
-    }
-
-    this._invoke = send;
-
-    if (typeof gen.return !== "function") {
-      this.return = undefined;
-    }
-  }
-
-  if (typeof Symbol === "function" && Symbol.asyncIterator) {
-    AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
-      return this;
-    };
-  }
-
-  AsyncGenerator.prototype.next = function (arg) {
-    return this._invoke("next", arg);
-  };
-
-  AsyncGenerator.prototype.throw = function (arg) {
-    return this._invoke("throw", arg);
-  };
-
-  AsyncGenerator.prototype.return = function (arg) {
-    return this._invoke("return", arg);
-  };
-
-  return {
-    wrap: function (fn) {
-      return function () {
-        return new AsyncGenerator(fn.apply(this, arguments));
-      };
-    },
-    await: function (value) {
-      return new AwaitValue(value);
-    }
-  };
-}();
-
-
-
-
-
-var classCallCheck = function (instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-};
-
-var createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }
-
-  return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) defineProperties(Constructor, staticProps);
-    return Constructor;
-  };
-}();
-
-
-
-
-
-
-
-var get = function get(object, property, receiver) {
-  if (object === null) object = Function.prototype;
-  var desc = Object.getOwnPropertyDescriptor(object, property);
-
-  if (desc === undefined) {
-    var parent = Object.getPrototypeOf(object);
-
-    if (parent === null) {
-      return undefined;
-    } else {
-      return get(parent, property, receiver);
-    }
-  } else if ("value" in desc) {
-    return desc.value;
-  } else {
-    var getter = desc.get;
-
-    if (getter === undefined) {
-      return undefined;
-    }
-
-    return getter.call(receiver);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-var set = function set(object, property, value, receiver) {
-  var desc = Object.getOwnPropertyDescriptor(object, property);
-
-  if (desc === undefined) {
-    var parent = Object.getPrototypeOf(object);
-
-    if (parent !== null) {
-      set(parent, property, value, receiver);
-    }
-  } else if ("value" in desc && desc.writable) {
-    desc.value = value;
-  } else {
-    var setter = desc.set;
-
-    if (setter !== undefined) {
-      setter.call(receiver, value);
-    }
-  }
-
-  return value;
-};
-
-var CancelToken = function CancelToken() {
-  classCallCheck(this, CancelToken);
-};
-
-var cache = new WeakMap();
+class CancelToken{}
+const cache = new WeakMap();
 // v8 likes predictible objects
-var Item = function () {
-  function Item(fun, array) {
-    classCallCheck(this, Item);
-
+class Item {
+  constructor(fun, array) {
     this.fun = fun;
     this.array = array;
     this.canceled = false;
     this.token = new CancelToken();
   }
-
-  createClass(Item, [{
-    key: "run",
-    value: function run() {
-      if (this.canceled) {
-        return false;
-      }
-      var fun = this.fun;
-      var array = this.array;
-      var out = false;
-      try {
-        switch (array.length) {
-          case 0:
-            fun();
-            break;
-          case 1:
-            fun(array[0]);
-            break;
-          case 2:
-            fun(array[0], array[1]);
-            break;
-          case 3:
-            fun(array[0], array[1], array[2]);
-            break;
-          default:
-            fun.apply(null, array);
-            break;
-        }
-      } catch (e) {
-        out = e;
-      } finally {
-        cache.delete(this.token);
-      }
-      return out;
+  run() {
+    if (this.canceled) {
+      return false;
     }
-  }, {
-    key: "cancel",
-    value: function cancel() {
-      this.canceled = true;
+    const fun = this.fun;
+    const array = this.array;
+    let out = false;
+    try {
+      switch (array.length) {
+        case 0:
+          fun();
+          break;
+        case 1:
+          fun(array[0]);
+          break;
+        case 2:
+          fun(array[0], array[1]);
+          break;
+        case 3:
+          fun(array[0], array[1], array[2]);
+          break;
+        default:
+          fun.apply(null, array);
+          break;
+      }
+    } catch(e) {
+      out = e;
+    } finally {
       cache.delete(this.token);
     }
-  }]);
-  return Item;
-}();
-
-var ListItem = function ListItem(value) {
-  classCallCheck(this, ListItem);
-
-  this.prev = null;
-  this.next = null;
-  this.value = value;
-};
-
-var IterItem = function () {
-  function IterItem() {
-    classCallCheck(this, IterItem);
+    return out;
   }
-
-  createClass(IterItem, [{
-    key: "construtor",
-    value: function construtor(value, done) {
-      this.value = value;
-      this.done = !!done;
-    }
-  }]);
-  return IterItem;
-}();
-
-var ListIterator = function () {
-  function ListIterator() {
-    classCallCheck(this, ListIterator);
+  cancel() {
+    this.canceled = true;
+    cache.delete(this.token);
   }
+}
 
-  createClass(ListIterator, [{
-    key: "construtor",
-    value: function construtor(current) {
-      this.current = current;
+class ListItem {
+  constructor(value) {
+    this.prev = null;
+    this.next = null;
+    this.value = value;
+  }
+}
+class IterItem {
+  construtor(value, done) {
+    this.value = value;
+    this.done = !!done;
+  }
+}
+class ListIterator {
+  construtor(current) {
+    this.current = current;
+  }
+  next() {
+    if (this.current) {
+      const current = this.current;
+      this.current = this.current.next;
+      return IterItem(current.value);
     }
-  }, {
-    key: "next",
-    value: function next() {
-      if (this.current) {
-        var current = this.current;
-        this.current = this.current.next;
-        return IterItem(current.value);
-      }
-      return IterItem(undefined, true);
-    }
-  }]);
-  return ListIterator;
-}();
-
-var List = function () {
-  function List() {
-    classCallCheck(this, List);
-
+    return IterItem(undefined, true);
+  }
+}
+class List {
+  constructor() {
     this.length = 0;
     this.head = null;
     this.tail = null;
   }
-
-  createClass(List, [{
-    key: "push",
-    value: function push(value) {
-      var item = new ListItem(value);
-      if (this.length > 0) {
-        var currentTail = this.tail;
-        currentTail.next = item;
-        item.prev = currentTail;
-        this.tail = item;
-      } else {
-        this.head = this.tail = item;
-      }
-      this.length++;
-      return this.length;
+  push(value) {
+    const item = new ListItem(value);
+    if (this.length > 0) {
+      const currentTail = this.tail;
+      currentTail.next = item;
+      item.prev = currentTail;
+      this.tail = item;
+    } else {
+      this.head = this.tail = item;
     }
-  }, {
-    key: "pop",
-    value: function pop() {
-      if (this.length < 1) {
-        return;
-      }
+    this.length++;
+    return this.length;
+  }
+  pop() {
+    if (this.length < 1) {
+      return;
+    }
 
-      var item = this.tail;
-      if (this.length === 1) {
+    const item = this.tail;
+    if (this.length === 1) {
         this.head = this.tail = null;
-      } else {
-        var newTail = item.prev;
-        newTail.next = null;
-        this.tail = newTail;
-      }
-      this.length--;
-      return item.value;
+    } else {
+      const newTail = item.prev;
+      newTail.next = null;
+      this.tail = newTail;
     }
-  }, {
-    key: "unshift",
-    value: function unshift(value) {
-      var item = new ListItem(value);
-      if (this.length > 0) {
-        var currentHead = this.head;
-        currentHead.prev = item;
-        item.next = currentHead;
-        this.head = item;
-      } else {
-        this.head = this.tail = item;
-      }
-      this.length++;
-      return this.length;
+    this.length--;
+    return item.value;
+  }
+  unshift(value) {
+    const item = new ListItem(value);
+    if (this.length > 0) {
+      const currentHead = this.head;
+      currentHead.prev = item;
+      item.next = currentHead;
+      this.head = item;
+    } else {
+      this.head = this.tail = item;
     }
-  }, {
-    key: "shift",
-    value: function shift() {
-      if (this.length < 1) {
-        return;
-      }
+    this.length++;
+    return this.length;
+  }
+  shift() {
+    if (this.length < 1) {
+      return;
+    }
 
-      var item = this.head;
-      if (this.length === 1) {
+    const item = this.head;
+    if (this.length === 1) {
         this.head = this.tail = null;
-      } else {
-        var newHead = item.next;
-        newHead.prev = null;
-        this.head = newHead;
-      }
-      this.length--;
-      return item.value;
+    } else {
+      const newHead = item.next;
+      newHead.prev = null;
+      this.head = newHead;
     }
-  }, {
-    key: Symbol.iterator,
-    value: function value() {
-      return new ListIterator(this.head);
-    }
-  }]);
-  return List;
-}();
+    this.length--;
+    return item.value;
+  }
+  [Symbol.iterator]() {
+    return new ListIterator(this.head);
+  }
+}
 
-var list = new List();
-var inProgress = false;
-var nextTick = void 0;
+const list = new List();
+let inProgress = false;
+let nextTick;
 function drainQueue() {
   if (!list.length) {
     inProgress = false;
     return;
   }
-  var task = list.shift();
-  while (task.canceled) {
+  let task = list.shift();
+  while(task.canceled) {
     if (!list.length) {
       inProgress = false;
       return;
     }
     task = list.shift();
   }
-  var error = task.run();
+  let error = task.run();
   if (!list.length) {
     inProgress = false;
   } else {
-    nextTick();
+     nextTick();
   }
   if (error) {
     throw error;
@@ -628,28 +343,20 @@ function enqueue(item) {
   inProgress = true;
   nextTick();
 }
-function run$1(task) {
-  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    args[_key - 1] = arguments[_key];
-  }
-
-  var item = new Item(task, args);
+function run (task, ...args) {
+  const item = new Item(task, args);
   cache.set(item.token, item);
   enqueue(item);
   return item.token;
 }
-function clear(token) {
+function clear (token) {
   if (cache.has(token)) {
-    var item = cache.get(token);
+    const item = cache.get(token);
     item.cancel();
     return true;
   }
   return false;
 }
 
-exports.run = run$1;
+exports.run = run;
 exports.clear = clear;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));
