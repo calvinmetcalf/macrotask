@@ -175,31 +175,24 @@ class Item {
     }
     const fun = this.fun;
     const array = this.array;
-    let out = false;
-    try {
-      switch (array.length) {
-        case 0:
-          fun();
-          break;
-        case 1:
-          fun(array[0]);
-          break;
-        case 2:
-          fun(array[0], array[1]);
-          break;
-        case 3:
-          fun(array[0], array[1], array[2]);
-          break;
-        default:
-          fun.apply(null, array);
-          break;
-      }
-    } catch(e) {
-      out = e;
-    } finally {
-      cache.delete(this.token);
+    cache.delete(this.token);
+    switch (array.length) {
+      case 0:
+        fun();
+        break;
+      case 1:
+        fun(array[0]);
+        break;
+      case 2:
+        fun(array[0], array[1]);
+        break;
+      case 3:
+        fun(array[0], array[1], array[2]);
+        break;
+      default:
+        fun.apply(null, array);
+        break;
     }
-    return out;
   }
   cancel() {
     this.canceled = true;
@@ -318,15 +311,12 @@ function drainQueue() {
     }
     task = list.shift();
   }
-  let error = task.run();
   if (!list.length) {
     inProgress = false;
   } else {
      nextTick();
   }
-  if (error) {
-    throw error;
-  }
+  task.run();
 }
 function enqueue(item) {
   list.push(item);

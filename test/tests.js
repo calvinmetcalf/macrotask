@@ -92,6 +92,35 @@ test("big test", function (t) {
     }
     macrotask.run(doStuff);
 });
+test('test errors', function (t) {
+  t.plan(7);
+  var order = 0;
+  process.once('uncaughtException', function(err) {
+      t.ok(true, err.message);
+      t.equals(2, order++, 'error is third');
+      macrotask.run(function () {
+        t.equals(5, order++, 'schedualed in error is last');
+      });
+  });
+  macrotask.run(function (num1, num2) {
+    t.equals(num1, order++, 'first one works');
+    macrotask.run(function (num) {
+      t.equals(num, order++, 'recursive one is 4th');
+    }, num2);
+  }, 0, 4);
+  macrotask.run(function () {
+    t.equals(1, order++, 'second one starts');
+    var err = new Error('an error is thrown');
+
+    err.code ='EPIPE';
+    err.errno = 'EPIPE';
+    err.syscall = 'write';
+    throw err;
+  });
+  macrotask.run(function () {
+    t.equals(3, order++, '3rd schedualed happens after the error');
+  });
+});
 if (process.browser && typeof Worker !== 'undefined') {
   test("worker", function (t) {
     var worker = new Worker('./test/worker.js');
