@@ -12,36 +12,10 @@ var setImmediate = Object.freeze({
 	install: install
 });
 
-//based off rsvp https://github.com/tildeio/rsvp.js
-//license https://github.com/tildeio/rsvp.js/blob/master/LICENSE
-//https://github.com/tildeio/rsvp.js/blob/master/lib/rsvp/asap.js
-
-var Mutation = global.MutationObserver || global.WebKitMutationObserver;
-
-const test$1 = () => Mutation && !(global.navigator && global.navigator.standalone) && !global.cordova;
-
-function install$1(handle) {
-  var called = 0;
-  var observer = new Mutation(handle);
-  var element = global.document.createTextNode('');
-  observer.observe(element, {
-    characterData: true
-  });
-  return function () {
-    element.data = (called = ++called % 2);
-  };
-}
-
-
-var mutation = Object.freeze({
-	test: test$1,
-	install: install$1
-});
-
 // The test against `importScripts` prevents this implementation from being installed inside a web worker,
 // where `global.postMessage` means something completely different and can't be used for this purpose.
 
-function test$2() {
+function test$1() {
   if (!global.postMessage || global.importScripts) {
     return false;
   }
@@ -61,7 +35,7 @@ function test$2() {
   return postMessageIsAsynchronous;
 }
 
-function install$2 (func) {
+function install$1 (func) {
   var codeWord = 'com.calvinmetcalf.setImmediate' + Math.random();
   function globalMessage(event) {
     if (event.source === global && event.data === codeWord) {
@@ -80,11 +54,11 @@ function install$2 (func) {
 
 
 var postMessage = Object.freeze({
-	test: test$2,
-	install: install$2
+	test: test$1,
+	install: install$1
 });
 
-function test$3() {
+function test$2() {
   if (global.setImmediate) {
     // we can only get here in IE10
     // which doesn't handel postMessage well
@@ -93,7 +67,7 @@ function test$3() {
   return typeof global.MessageChannel !== 'undefined';
 }
 
-function install$3(func) {
+function install$2(func) {
   var channel = new global.MessageChannel();
   channel.port1.onmessage = func;
   return function () {
@@ -103,14 +77,14 @@ function install$3(func) {
 
 
 var messageChannel = Object.freeze({
-	test: test$3,
-	install: install$3
+	test: test$2,
+	install: install$2
 });
 
-const test$4 = () =>
+const test$3 = () =>
   'document' in global && 'onreadystatechange' in global.document.createElement('script');
 
-const install$4 = handle => function () {
+const install$3 = handle => function () {
 
     // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
     // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
@@ -129,13 +103,13 @@ const install$4 = handle => function () {
 
 
 var stateChange = Object.freeze({
-	test: test$4,
-	install: install$4
+	test: test$3,
+	install: install$3
 });
 
-const test$5 =  () => true;
+const test$4 =  () => true;
 
-function install$5(t) {
+function install$4(t) {
   return function () {
     setTimeout(t, 0);
   };
@@ -143,13 +117,12 @@ function install$5(t) {
 
 
 var timeout = Object.freeze({
-	test: test$5,
-	install: install$5
+	test: test$4,
+	install: install$4
 });
 
 var types = [
   setImmediate,
-  mutation,
   postMessage,
   messageChannel,
   stateChange,
