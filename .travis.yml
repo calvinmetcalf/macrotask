@@ -18,14 +18,11 @@ matrix:
   fast_finish: true
   include:
   - node_js: 6
-    env: TASK=test
+    env: TASK=test CXX=g++-4.8
   - node_js: 7
-    env: TASK=test
+    env: TASK=test CXX=g++-4.8
   - node_js: 6
-    env: TASK=test-browser
-
-env:
-  - CXX=g++-4.8
+    env: TASK=test-browser CXX=g++-4.8
 
 addons:
   apt:
