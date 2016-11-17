@@ -4,6 +4,7 @@ notifications:
   email: false
 
 before_script:
+  - npm install ansi-codes@0.0.0 new-format@0.0.0
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
   - "sleep 5"
