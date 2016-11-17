@@ -269,15 +269,21 @@ if (process.browser && typeof Worker !== 'undefined') {
       worker.terminate();
       t.end();
     };
+    worker.onerror = function (e) {
+      t.error(e);
+    }
     worker.postMessage('ping');
   });
   test("worker errors", function (t) {
+    t.plan(2);
     var worker = new Worker('./assets/in/test/worker.js');
     worker.onmessage = function (e) {
-      t.deepEqual(e.data, [0,1,2,3,4,5]);
       worker.terminate();
-      t.end();
+      t.deepEqual(e.data, [0,1,2,3,4,5]);
     };
+    worker.onerror = function (e) {
+      t.ok(true, e);
+    }
     worker.postMessage('errorTest');
   });
 }

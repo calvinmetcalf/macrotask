@@ -5,7 +5,7 @@ notifications:
 
 before_install:
   - npm install ansi-codes@0.0.0 new-format@0.0.0
-  
+
 before_script:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
@@ -17,10 +17,6 @@ script: "npm run $TASK"
 matrix:
   fast_finish: true
   include:
-  - node_js: 4
-    env: TASK=test
-  - node_js: 5
-    env: TASK=test
   - node_js: 6
     env: TASK=test
   - node_js: 7
