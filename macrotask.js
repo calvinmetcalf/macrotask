@@ -1,6 +1,8 @@
-'use strict';
-
-Object.defineProperty(exports, '__esModule', { value: true });
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (factory((global.macrotask = global.macrotask || {})));
+}(this, (function (exports) { 'use strict';
 
 var global$1 = typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};
 
@@ -604,4 +606,7 @@ function clear(token) {
 
 exports.run = run$1;
 exports.clear = clear;
-//# sourceMappingURL=macrotask.es5.js.map
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+})));

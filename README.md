@@ -8,6 +8,44 @@
 
 > In practice, what this means is that if you call `setImmediate` inside of another task queued with `setImmediate`, you will yield back to the event loop and any I/O or rendering tasks that need to take place between those calls, instead of executing the queued task as soon as possible.
 
+```bash
+npm install --save macrotask
+```
+
+provides 2 methods, `run` and `clear`, they work just like setImmediate does where run enqueues a task
+
+```js
+const task = macrotask.run(function (a, b) {
+  console.log(a, b);
+}, 'hello', 'there');
+// prints hello there
+```
+
+and clear cancels it
+
+
+```js
+const task = macrotask.run(function (a, b) {
+  console.log(a, b);
+}, 'hello', 'there');
+macrotask.clear(task);
+// does not print anything
+```
+
+you can use it via a number of different methods:
+
+```js
+// commonjs style in node or browserify
+const macrotask = require('macrotask');
+
+// es6 style with rollup or babel
+import macrotask from 'macrotask';
+// or
+import {run, clear} from 'macrotask';
+```
+
+or you can just drop the `macrotask.js` or `macrotask.min.js` scripts from the root directory of the repo
+
 [immediate]: https://github.com/calvinmetcalf/immediate
 [ref]: https://github.com/YuzuJS/setImmediate#macrotasks-and-microtasks
 [task queue]: http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html#task-queue

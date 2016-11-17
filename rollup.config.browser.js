@@ -8,8 +8,15 @@ export default {
     globals(),
     babel(babelrc())
   ],
-  moduleName: 'macrotask',
-  dest: pkg['browser'],
-  format: 'umd',
-  sourceMap: true
+  targets: [{
+    dest: pkg['browser'],
+    format: 'cjs',
+    sourceMap: true
+  },
+  {
+    moduleName: 'macrotask',
+    dest: 'macrotask.js',
+    format: 'umd'
+  }
+  ]
 };
