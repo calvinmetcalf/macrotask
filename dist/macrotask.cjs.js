@@ -258,13 +258,6 @@ function drainQueue() {
     return;
   }
   let task = list.shift();
-  while(task.canceled) {
-    if (!list.length) {
-      inProgress = false;
-      return;
-    }
-    task = list.shift();
-  }
   if (!list.length) {
     inProgress = false;
   } else {
