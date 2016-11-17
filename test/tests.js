@@ -77,20 +77,65 @@ test("does not interfere with handlers other than the one with ID passed to it",
         t.end();
     }, 100);
 });
-
-test("big test", function (t) {
-    //mainly for optimizition testing
-    var i = 1000;
-    function doStuff() {
-        i--;
-        if(!i) {
-            t.ok(true, 'big one works');
-            t.end();
-        } else {
-            macrotask.run(doStuff);
-        }
+test("does not interfere with handlers other than the one with ID passed to it", function (t) {
+    var expectedArgs = ["A", "D"];
+    var recordedArgs = [];
+    function handler(arg) {
+        recordedArgs.push(arg);
     }
-    macrotask.run(doStuff);
+
+    macrotask.run(handler, "A");
+    macrotask.clear(macrotask.run(handler, "B"));
+    var handle = macrotask.run(handler, "C");
+    macrotask.run(handler, "D");
+    macrotask.clear(handle);
+
+    setTimeout(function () {
+        t.deepEqual(recordedArgs, expectedArgs);
+        t.end();
+    }, 100);
+});
+test("test arguments", function (t) {
+    t.test('one', function (t) {
+      t.plan(1);
+      macrotask.run(function (num) {
+        t.equals(num, 7, 'correct number 1');
+      }, 7);
+    });
+    t.test('two', function (t) {
+      t.plan(2);
+      macrotask.run(function (a, b) {
+        t.equals(a, 7, 'correct number 1');
+        t.equals(b, 12, 'correct number 2');
+      }, 7, 12);
+    });
+    t.test('three', function (t) {
+      t.plan(3);
+      macrotask.run(function (a, b, c) {
+        t.equals(a, 7, 'correct number 1');
+        t.equals(b, 12, 'correct number 2');
+        t.equals(c, 24, 'correct number 3');
+      }, 7, 12, 24);
+    });
+    t.test('four', function (t) {
+      t.plan(4);
+      macrotask.run(function (a, b, c, d) {
+        t.equals(a, 7, 'correct number 1');
+        t.equals(b, 12, 'correct number 2');
+        t.equals(c, 24, 'correct number 3');
+        t.equals(d, 57, 'correct number 4');
+      }, 7, 12, 24, 57);
+    });
+    t.test('five', function (t) {
+      t.plan(5);
+      macrotask.run(function (a, b, c, d, e) {
+        t.equals(a, 7, 'correct number 1');
+        t.equals(b, 12, 'correct number 2');
+        t.equals(c, 24, 'correct number 3');
+        t.equals(d, 57, 'correct number 4');
+        t.equals(e, 74, 'correct number 5');
+      }, 7, 12, 24, 57, 74);
+    });
 });
 test('test errors', function (t) {
   t.plan(7);

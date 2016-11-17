@@ -400,31 +400,52 @@ var set = function set(object, property, value, receiver) {
   return value;
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var toConsumableArray = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
+};
+
 var CancelToken = function CancelToken() {
   classCallCheck(this, CancelToken);
 };
 
-var cache = new WeakMap();
 // v8 likes predictible objects
 var Item = function () {
-  function Item(fun, array) {
+  function Item(fun, array, list) {
     classCallCheck(this, Item);
 
     this.fun = fun;
     this.array = array;
-    this.canceled = false;
     this.token = new CancelToken();
+    this.prev = null;
+    this.next = null;
+    this.list = list;
   }
 
   createClass(Item, [{
     key: "run",
     value: function run() {
-      if (this.canceled) {
-        return false;
-      }
       var fun = this.fun;
       var array = this.array;
-      cache.delete(this.token);
       switch (array.length) {
         case 0:
           fun();
@@ -439,65 +460,44 @@ var Item = function () {
           fun(array[0], array[1], array[2]);
           break;
         default:
-          fun.apply(null, array);
+          fun.apply(undefined, toConsumableArray(array));
           break;
       }
     }
   }, {
     key: "cancel",
     value: function cancel() {
-      this.canceled = true;
-      cache.delete(this.token);
+      var next = this.next;
+      var prev = this.prev;
+      if (next === null) {
+        if (prev === null) {
+          // only thing on list
+          if (this.list.head === this && this.list.length === 1) {
+            // sanity check
+            this.list.head = this.list.tail = null;
+          } else {
+            return;
+          }
+        } else {
+          prev.next = null;
+          this.list.tail = prev;
+          // tail of list
+        }
+      } else {
+        if (prev === null) {
+          // head of list
+          next.prev = null;
+          this.list.head = next;
+        } else {
+          // middle of list
+          prev.next = next;
+          next.prev = prev;
+        }
+      }
+      this.list.length--;
     }
   }]);
   return Item;
-}();
-
-var ListItem = function ListItem(value) {
-  classCallCheck(this, ListItem);
-
-  this.prev = null;
-  this.next = null;
-  this.value = value;
-};
-
-var IterItem = function () {
-  function IterItem() {
-    classCallCheck(this, IterItem);
-  }
-
-  createClass(IterItem, [{
-    key: "construtor",
-    value: function construtor(value, done) {
-      this.value = value;
-      this.done = !!done;
-    }
-  }]);
-  return IterItem;
-}();
-
-var ListIterator = function () {
-  function ListIterator() {
-    classCallCheck(this, ListIterator);
-  }
-
-  createClass(ListIterator, [{
-    key: "construtor",
-    value: function construtor(current) {
-      this.current = current;
-    }
-  }, {
-    key: "next",
-    value: function next() {
-      if (this.current) {
-        var current = this.current;
-        this.current = this.current.next;
-        return IterItem(current.value);
-      }
-      return IterItem(undefined, true);
-    }
-  }]);
-  return ListIterator;
 }();
 
 var List = function () {
@@ -507,12 +507,13 @@ var List = function () {
     this.length = 0;
     this.head = null;
     this.tail = null;
+    this.cache = new WeakMap();
   }
 
   createClass(List, [{
-    key: "push",
-    value: function push(value) {
-      var item = new ListItem(value);
+    key: 'push',
+    value: function push(func, args) {
+      var item = new Item(func, args, this);
       if (this.length > 0) {
         var currentTail = this.tail;
         currentTail.next = item;
@@ -522,48 +523,15 @@ var List = function () {
         this.head = this.tail = item;
       }
       this.length++;
-      return this.length;
+      this.cache.set(item.token, item);
+      return item.token;
     }
   }, {
-    key: "pop",
-    value: function pop() {
-      if (this.length < 1) {
-        return;
-      }
-
-      var item = this.tail;
-      if (this.length === 1) {
-        this.head = this.tail = null;
-      } else {
-        var newTail = item.prev;
-        newTail.next = null;
-        this.tail = newTail;
-      }
-      this.length--;
-      return item.value;
-    }
-  }, {
-    key: "unshift",
-    value: function unshift(value) {
-      var item = new ListItem(value);
-      if (this.length > 0) {
-        var currentHead = this.head;
-        currentHead.prev = item;
-        item.next = currentHead;
-        this.head = item;
-      } else {
-        this.head = this.tail = item;
-      }
-      this.length++;
-      return this.length;
-    }
-  }, {
-    key: "shift",
+    key: 'shift',
     value: function shift() {
       if (this.length < 1) {
         return;
       }
-
       var item = this.head;
       if (this.length === 1) {
         this.head = this.tail = null;
@@ -573,12 +541,20 @@ var List = function () {
         this.head = newHead;
       }
       this.length--;
-      return item.value;
+      this.cache.delete(item.token);
+      return item;
     }
   }, {
-    key: Symbol.iterator,
-    value: function value() {
-      return new ListIterator(this.head);
+    key: 'cancel',
+    value: function cancel(token) {
+      var item = this.cache.get(token);
+      if (item) {
+        this.cache.delete(token);
+      } else {
+        return false;
+      }
+      item.cancel();
+      return true;
     }
   }]);
   return List;
@@ -607,34 +583,25 @@ function drainQueue() {
   }
   task.run();
 }
-function enqueue(item) {
-  list.push(item);
+
+function run$1(task) {
+  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  var token = list.push(task, args);
   if (inProgress) {
-    return;
+    return token;
   }
   if (!nextTick) {
     nextTick = creatNextTick(drainQueue);
   }
   inProgress = true;
   nextTick();
-}
-function run$1(task) {
-  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    args[_key - 1] = arguments[_key];
-  }
-
-  var item = new Item(task, args);
-  cache.set(item.token, item);
-  enqueue(item);
-  return item.token;
+  return token;
 }
 function clear(token) {
-  if (cache.has(token)) {
-    var item = cache.get(token);
-    item.cancel();
-    return true;
-  }
-  return false;
+  return list.cancel(token);
 }
 
 exports.run = run$1;

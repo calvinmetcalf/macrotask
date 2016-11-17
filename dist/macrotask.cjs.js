@@ -164,22 +164,19 @@ var creatNextTick = function (drainQueue) {
 };
 
 class CancelToken{}
-const cache = new WeakMap();
 // v8 likes predictible objects
 class Item {
-  constructor(fun, array) {
+  constructor(fun, array, list) {
     this.fun = fun;
     this.array = array;
-    this.canceled = false;
     this.token = new CancelToken();
+    this.prev = null;
+    this.next = null;
+    this.list = list;
   }
   run() {
-    if (this.canceled) {
-      return false;
-    }
     const fun = this.fun;
     const array = this.array;
-    cache.delete(this.token);
     switch (array.length) {
       case 0:
         fun();
@@ -194,50 +191,51 @@ class Item {
         fun(array[0], array[1], array[2]);
         break;
       default:
-        fun.apply(null, array);
+        fun(...array);
         break;
     }
   }
   cancel() {
-    this.canceled = true;
-    cache.delete(this.token);
+    const next = this.next;
+    const prev = this.prev;
+    if (next === null) {
+      if (prev === null) {
+        // only thing on list
+        if (this.list.head === this && this.list.length === 1) {
+          // sanity check
+          this.list.head = this.list.tail = null;
+        } else {
+          return;
+        }
+      } else {
+        prev.next = null;
+        this.list.tail = prev;
+        // tail of list
+      }
+    } else {
+      if (prev === null) {
+        // head of list
+        next.prev = null;
+        this.list.head = next;
+      } else {
+        // middle of list
+        prev.next = next;
+        next.prev = prev;
+      }
+    }
+    this.list.length--;
   }
 }
 
-class ListItem {
-  constructor(value) {
-    this.prev = null;
-    this.next = null;
-    this.value = value;
-  }
-}
-class IterItem {
-  construtor(value, done) {
-    this.value = value;
-    this.done = !!done;
-  }
-}
-class ListIterator {
-  construtor(current) {
-    this.current = current;
-  }
-  next() {
-    if (this.current) {
-      const current = this.current;
-      this.current = this.current.next;
-      return IterItem(current.value);
-    }
-    return IterItem(undefined, true);
-  }
-}
 class List {
   constructor() {
     this.length = 0;
     this.head = null;
     this.tail = null;
+    this.cache = new WeakMap();
   }
-  push(value) {
-    const item = new ListItem(value);
+  push(func, args) {
+    const item = new Item(func, args, this);
     if (this.length > 0) {
       const currentTail = this.tail;
       currentTail.next = item;
@@ -247,42 +245,13 @@ class List {
       this.head = this.tail = item;
     }
     this.length++;
-    return this.length;
-  }
-  pop() {
-    if (this.length < 1) {
-      return;
-    }
-
-    const item = this.tail;
-    if (this.length === 1) {
-        this.head = this.tail = null;
-    } else {
-      const newTail = item.prev;
-      newTail.next = null;
-      this.tail = newTail;
-    }
-    this.length--;
-    return item.value;
-  }
-  unshift(value) {
-    const item = new ListItem(value);
-    if (this.length > 0) {
-      const currentHead = this.head;
-      currentHead.prev = item;
-      item.next = currentHead;
-      this.head = item;
-    } else {
-      this.head = this.tail = item;
-    }
-    this.length++;
-    return this.length;
+    this.cache.set(item.token, item);
+    return item.token;
   }
   shift() {
     if (this.length < 1) {
       return;
     }
-
     const item = this.head;
     if (this.length === 1) {
         this.head = this.tail = null;
@@ -292,10 +261,18 @@ class List {
       this.head = newHead;
     }
     this.length--;
-    return item.value;
+    this.cache.delete(item.token);
+    return item;
   }
-  [Symbol.iterator]() {
-    return new ListIterator(this.head);
+  cancel(token) {
+    const item = this.cache.get(token);
+    if (item) {
+      this.cache.delete(token);
+    } else {
+      return false;
+    }
+    item.cancel();
+    return true;
   }
 }
 
@@ -322,30 +299,21 @@ function drainQueue() {
   }
   task.run();
 }
-function enqueue(item) {
-  list.push(item);
+
+function run (task, ...args) {
+  const token = list.push(task, args);
   if (inProgress) {
-    return;
+    return token;
   }
   if (!nextTick) {
     nextTick = creatNextTick(drainQueue);
   }
   inProgress = true;
   nextTick();
-}
-function run (task, ...args) {
-  const item = new Item(task, args);
-  cache.set(item.token, item);
-  enqueue(item);
-  return item.token;
+  return token;
 }
 function clear (token) {
-  if (cache.has(token)) {
-    const item = cache.get(token);
-    item.cancel();
-    return true;
-  }
-  return false;
+  return list.cancel(token);
 }
 
 exports.run = run;
