@@ -35,7 +35,8 @@
     "build": "npm run build-js && npm run uglify",
     "uglify": "rollup -c rollup.config.min.js",
     "build-js": "rollup -c rollup.config.js && rollup -c rollup.config.browser.js",
-    "test": "rollup -c rollup.config.js && node test/tests.js"
+    "test": "rollup -c rollup.config.js && node test/tests.js",
+    "test-browser": "npm run build-js && node test/tests.js -b -l firefox -e "
   },
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.18.0",
@@ -45,7 +46,6 @@
     "rollup-plugin-babel": "^2.6.1",
     "rollup-plugin-node-globals": "^1.1.0",
     "rollup-plugin-uglify": "^1.0.1",
-    "tape": "^2.10.2",
-    "uglify-js": "^2.4.12"
+    "prova": "^3.0.0"
   }
 }

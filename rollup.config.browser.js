@@ -10,5 +10,6 @@ export default {
   ],
   moduleName: 'macrotask',
   dest: pkg['browser'],
-  format: 'umd'
+  format: 'umd',
+  sourceMap: true
 };

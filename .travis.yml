@@ -1,6 +1,5 @@
 language: node_js
-node_js:
-  - '0.10'
+
 notifications:
   email: false
 
@@ -10,3 +9,18 @@ before_script:
   - "sleep 5"
     # Workaround for Selenium #3280 issue
   - "sudo sed -i 's/^127\\.0\\.0\\.1.*$/127.0.0.1 localhost/' /etc/hosts"
+script: "npm run $TASK"
+
+matrix:
+  fast_finish: true
+  include:
+  - node_js: 4
+    env: TASK=test
+  - node_js: 5
+    env: TASK=test
+  - node_js: 6
+    env: TASK=test
+  - node_js: 7
+    env: TASK=test
+  - node_js: 6
+    env: TASK=test-browser

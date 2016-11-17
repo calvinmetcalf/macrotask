@@ -12,14 +12,6 @@ export default {
         sourceMap: true
       },
       {
-        plugins: [
-          babel(babelrc())
-        ],
-      dest: pkg['browser'],
-      format: 'cjs',
-
-    },
-      {
         dest: pkg['jsnext:main'],
         format: 'es',
         sourceMap: true

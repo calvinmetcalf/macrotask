@@ -610,3 +610,4 @@ exports.clear = clear;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
+//# sourceMappingURL=macrotask.es5.js.map

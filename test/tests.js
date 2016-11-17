@@ -1,5 +1,5 @@
-var test = require('tape');
-var macrotask = require("../dist/macrotask.cjs.js");
+var test = require('prova');
+var macrotask = require("..");
 
 test("Handlers do execute", function (t) {
     macrotask.run(function () {
@@ -58,6 +58,7 @@ test("witin the same event loop turn prevents the handler from executing", funct
         t.end();
     }, 100);
 });
+
 
 test("does not interfere with handlers other than the one with ID passed to it", function (t) {
     var expectedArgs = ["A", "D"];
@@ -137,42 +138,146 @@ test("test arguments", function (t) {
       }, 7, 12, 24, 57, 74);
     });
 });
-test('test errors', function (t) {
-  t.plan(7);
-  var order = 0;
-  process.once('uncaughtException', function(err) {
-      t.ok(true, err.message);
-      t.equals(2, order++, 'error is third');
-      macrotask.run(function () {
-        t.equals(5, order++, 'schedualed in error is last');
-      });
+test('more cancelations', function (t) {
+  t.test('cancel first one', function (t) {
+    t.plan(3);
+    var toCancel = macrotask.run(function () {
+      t.ok(false, 'should not run');
+    });
+    macrotask.run(function () {
+     t.ok(true, 'first should run');
+   });
+   macrotask.run(function () {
+    t.ok(true, 'seccond should run');
   });
-  macrotask.run(function (num1, num2) {
-    t.equals(num1, order++, 'first one works');
-    macrotask.run(function (num) {
-      t.equals(num, order++, 'recursive one is 4th');
-    }, num2);
-  }, 0, 4);
   macrotask.run(function () {
-    t.equals(1, order++, 'second one starts');
-    var err = new Error('an error is thrown');
+   t.ok(true, 'third should run');
+ });
+ macrotask.clear(toCancel);
+  })
+  t.test('cancel seccond one', function (t) {
+    t.plan(3);
 
-    err.code ='EPIPE';
-    err.errno = 'EPIPE';
-    err.syscall = 'write';
-    throw err;
+    macrotask.run(function () {
+     t.ok(true, 'first should run');
+   });
+   var toCancel = macrotask.run(function () {
+     t.ok(false, 'should not run');
+   });
+   macrotask.run(function () {
+    t.ok(true, 'seccond should run');
   });
   macrotask.run(function () {
-    t.equals(3, order++, '3rd schedualed happens after the error');
+   t.ok(true, 'third should run');
+ });
+ macrotask.clear(toCancel);
   });
-});
+  t.test('cancel third one', function (t) {
+    t.plan(3);
+
+    macrotask.run(function () {
+     t.ok(true, 'first should run');
+   });
+
+   macrotask.run(function () {
+    t.ok(true, 'seccond should run');
+  });
+  var toCancel = macrotask.run(function () {
+    t.ok(false, 'should not run');
+  });
+  macrotask.run(function () {
+   t.ok(true, 'third should run');
+ });
+ macrotask.clear(toCancel);
+  });
+  t.test('cancel last one', function (t) {
+    t.plan(3);
+
+    macrotask.run(function () {
+     t.ok(true, 'first should run');
+   });
+
+   macrotask.run(function () {
+    t.ok(true, 'seccond should run');
+  });
+
+  macrotask.run(function () {
+   t.ok(true, 'third should run');
+ });
+ var toCancel = macrotask.run(function () {
+   t.ok(false, 'should not run');
+ });
+ macrotask.clear(toCancel);
+  });
+  t.test('cancel inside', function (t) {
+    t.plan(3);
+
+    macrotask.run(function () {
+     t.ok(true, 'first should run');
+      macrotask.clear(toCancel);
+   });
+   var toCancel = macrotask.run(function () {
+     t.ok(false, 'should not run');
+   });
+   macrotask.run(function () {
+    t.ok(true, 'seccond should run');
+  });
+
+  macrotask.run(function () {
+   t.ok(true, 'third should run');
+ });
+
+
+  });
+})
+if (!process.browser) {
+  test('test errors', function (t) {
+    t.plan(7);
+    var order = 0;
+    process.once('uncaughtException', function(err) {
+        t.ok(true, err.message);
+        t.equals(2, order++, 'error is third');
+        macrotask.run(function () {
+          t.equals(5, order++, 'schedualed in error is last');
+        });
+    });
+    macrotask.run(function (num1, num2) {
+      t.equals(num1, order++, 'first one works');
+      macrotask.run(function (num) {
+        t.equals(num, order++, 'recursive one is 4th');
+      }, num2);
+    }, 0, 4);
+    macrotask.run(function () {
+      t.equals(1, order++, 'second one starts');
+      var err = new Error('an error is thrown');
+
+      err.code ='EPIPE';
+      err.errno = 'EPIPE';
+      err.syscall = 'write';
+      throw err;
+    });
+    macrotask.run(function () {
+      t.equals(3, order++, '3rd schedualed happens after the error');
+    });
+  });
+}
 if (process.browser && typeof Worker !== 'undefined') {
   test("worker", function (t) {
-    var worker = new Worker('./test/worker.js');
+    var worker = new Worker('./assets/in/test/worker.js');
     worker.onmessage = function (e) {
       t.equal(e.data, 'pong');
+      worker.terminate();
       t.end();
     };
     worker.postMessage('ping');
+  });
+  test("worker errors", function (t) {
+    var worker = new Worker('./assets/in/test/worker.js');
+    worker.onmessage = function (e) {
+      t.deepEqual(e.data, [0,1,2,3,4,5]);
+      worker.terminate();
+      t.end();
+    };
+    worker.postMessage('errorTest');
   });
 }
