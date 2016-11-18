@@ -3,11 +3,9 @@
     [
       "es2015",
       {
-        "modules": false
+        "modules": false,
+        "loose": true
       }
     ]
-  ],
-  "plugins": [
-    "external-helpers"
   ]
 }

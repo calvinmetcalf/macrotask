@@ -1,4 +1,4 @@
-importScripts('../dist/macrotask.es5.js');
+importScripts('../macrotask.js');
 self.onmessage = function (e) {
   if (e.data === 'ping') {
     macrotask.run(function () {

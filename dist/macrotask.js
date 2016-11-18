@@ -117,15 +117,26 @@ var timeout = Object.freeze({
 	install: install$4
 });
 
+const test$5 = () => typeof global.requestIdleCallback === 'function';
+const install$5 = func => () => global.requestIdleCallback(func);
+
+
+var idleCallback = Object.freeze({
+	test: test$5,
+	install: install$5
+});
+
 var types = [
   setImmediate,
+  idleCallback,
   postMessage,
   messageChannel,
   stateChange,
   timeout
 ];
 var creatNextTick = function (drainQueue) {
-  for (let type of types) {
+  for (let i = 0; i < types.length; i++) {
+    let type = types[i];
     if (type.test()) {
       return type.install(drainQueue);
     }
