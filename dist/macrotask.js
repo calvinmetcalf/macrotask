@@ -32,7 +32,7 @@ function test$1() {
 }
 
 function install$1 (func) {
-  var codeWord = 'com.calvinmetcalf.setImmediate' + Math.random();
+  var codeWord = 'macrotask' + Math.random();
   function globalMessage(event) {
     if (event.source === global && event.data === codeWord) {
       func();
@@ -65,7 +65,7 @@ function test$2() {
 
 function install$2(func) {
   var channel = new global.MessageChannel();
-  channel.port1.onmessage = func;
+  channel.port1.onmessage = ()=>func();
   return function () {
     channel.port2.postMessage(0);
   };
@@ -126,7 +126,7 @@ var idleCallback = Object.freeze({
 	install: install$5
 });
 
-var types = [
+const types = [
   setImmediate,
   idleCallback,
   postMessage,
@@ -135,8 +135,7 @@ var types = [
   timeout
 ];
 var creatNextTick = function (drainQueue) {
-  for (let i = 0; i < types.length; i++) {
-    let type = types[i];
+  for (let type of types) {
     if (type.test()) {
       return type.install(drainQueue);
     }
@@ -259,7 +258,7 @@ class List {
 const list = new List();
 let inProgress = false;
 let nextTick;
-function drainQueue() {
+function drainQueue(idleDeadline) {
   if (!list.length) {
     inProgress = false;
     return;
@@ -268,9 +267,16 @@ function drainQueue() {
   if (!list.length) {
     inProgress = false;
   } else {
-     nextTick();
+    nextTick();
   }
   task.run();
+  if (!idleDeadline) {
+    return;
+  }
+  while (idleDeadline.timeRemaining() > 0 && list.length) {
+    let task = list.shift();
+    task.run();
+  }
 }
 
 function run (task, ...args) {
