@@ -8,6 +8,10 @@
 
 > In practice, what this means is that if you call `setImmediate` inside of another task queued with `setImmediate`, you will yield back to the event loop and any I/O or rendering tasks that need to take place between those calls, instead of executing the queued task as soon as possible.
 
+The standard as it eventually got codified was that macrotasks were supposed to only get a single task from the queue per cycle instead of emptying the queue and cycling event loop before calling any recursive tasks.
+
+This library ends up splitting the difference by tacking advantage of [requestIdleCallback](idle) when available to run one or more tasks from the queue depending on how long they take, for environments that don't have requestIdleCallback we give ourselves a time limit of 10ms after which we will cycle the event loop before executing more tasks. At least one task will always be executed per loop.
+
 ```bash
 npm install --save macrotask
 ```
@@ -44,9 +48,10 @@ import macrotask from 'macrotask';
 import {run, clear} from 'macrotask';
 ```
 
-or you can just drop the `macrotask.js` or `macrotask.min.js` scripts from the root directory of the repo
+or you can just drop the `macrotask.js` or `macrotask.min.js` scripts from the root directory of the repo.
 
 [immediate]: https://github.com/calvinmetcalf/immediate
 [ref]: https://github.com/YuzuJS/setImmediate#macrotasks-and-microtasks
 [task queue]: http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html#task-queue
 [microtask queue]: http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html#perform-a-microtask-checkpoint
+[idle]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback

@@ -6,169 +6,6 @@ var global$1 = typeof global !== "undefined" ? global : typeof self !== "undefin
 
 var browser = true;
 
-var test = function test() {
-  return !browser && global$1 && typeof global$1.setImmediate === 'function';
-};
-
-var install = function install(func) {
-  return function () {
-    return global$1.setImmediate(func);
-  };
-};
-
-var setImmediate = Object.freeze({
-	test: test,
-	install: install
-});
-
-// The test against `importScripts` prevents this implementation from being installed inside a web worker,
-// where `global.postMessage` means something completely different and can't be used for this purpose.
-
-function test$1() {
-  if (!global$1.postMessage || global$1.importScripts) {
-    return false;
-  }
-  if (global$1.setImmediate) {
-    // we can only get here in IE10
-    // which doesn't handel postMessage well
-    return false;
-  }
-  var postMessageIsAsynchronous = true;
-  var oldOnMessage = global$1.onmessage;
-  global$1.onmessage = function () {
-    postMessageIsAsynchronous = false;
-  };
-  global$1.postMessage('', '*');
-  global$1.onmessage = oldOnMessage;
-
-  return postMessageIsAsynchronous;
-}
-
-function install$1(func) {
-  var codeWord = 'macrotask' + Math.random();
-  function globalMessage(event) {
-    if (event.source === global$1 && event.data === codeWord) {
-      func();
-    }
-  }
-  if (global$1.addEventListener) {
-    global$1.addEventListener('message', globalMessage, false);
-  } else {
-    global$1.attachEvent('onmessage', globalMessage);
-  }
-  return function () {
-    global$1.postMessage(codeWord, '*');
-  };
-}
-
-var postMessage = Object.freeze({
-	test: test$1,
-	install: install$1
-});
-
-function test$2() {
-  if (global$1.setImmediate) {
-    // we can only get here in IE10
-    // which doesn't handel postMessage well
-    return false;
-  }
-  return typeof global$1.MessageChannel !== 'undefined';
-}
-
-function install$2(func) {
-  var channel = new global$1.MessageChannel();
-  channel.port1.onmessage = function () {
-    return func();
-  };
-  return function () {
-    channel.port2.postMessage(0);
-  };
-}
-
-var messageChannel = Object.freeze({
-	test: test$2,
-	install: install$2
-});
-
-var test$3 = function test$3() {
-  return 'document' in global$1 && 'onreadystatechange' in global$1.document.createElement('script');
-};
-
-var install$3 = function install$3(handle) {
-  return function () {
-
-    // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-    // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-    var scriptEl = global$1.document.createElement('script');
-    scriptEl.onreadystatechange = function () {
-      handle();
-
-      scriptEl.onreadystatechange = null;
-      scriptEl.parentNode.removeChild(scriptEl);
-      scriptEl = null;
-    };
-    global$1.document.documentElement.appendChild(scriptEl);
-
-    return handle;
-  };
-};
-
-var stateChange = Object.freeze({
-	test: test$3,
-	install: install$3
-});
-
-var test$4 = function test$4() {
-  return true;
-};
-
-function install$4(t) {
-  return function () {
-    setTimeout(t, 0);
-  };
-}
-
-var timeout = Object.freeze({
-	test: test$4,
-	install: install$4
-});
-
-var test$5 = function test$5() {
-  return typeof global$1.requestIdleCallback === 'function';
-};
-var install$5 = function install$5(func) {
-  return function () {
-    return global$1.requestIdleCallback(func);
-  };
-};
-
-var idleCallback = Object.freeze({
-	test: test$5,
-	install: install$5
-});
-
-var types = [setImmediate, idleCallback, postMessage, messageChannel, stateChange, timeout];
-var creatNextTick = function (drainQueue) {
-  for (var _iterator = types, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-    var _ref;
-
-    if (_isArray) {
-      if (_i >= _iterator.length) break;
-      _ref = _iterator[_i++];
-    } else {
-      _i = _iterator.next();
-      if (_i.done) break;
-      _ref = _i.value;
-    }
-
-    var type = _ref;
-
-    if (type.test()) {
-      return type.install(drainQueue);
-    }
-  }
-};
-
 var asyncGenerator = function () {
   function AwaitValue(value) {
     this.value = value;
@@ -363,6 +200,206 @@ var set = function set(object, property, value, receiver) {
   return value;
 };
 
+var perf = void 0;
+
+var Deadline = function () {
+  function Deadline() {
+    var limit = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 10;
+    classCallCheck(this, Deadline);
+
+    this.limit = limit;
+    this.performance = Deadline.getPerformance();
+    this.now = this.getTime();
+  }
+
+  Deadline.prototype.getTime = function getTime() {
+    return this.performance ? global$1.performance.now() : Date.now();
+  };
+
+  Deadline.prototype.timeRemaining = function timeRemaining() {
+    var out = this.limit - (this.getTime() - this.now);
+    if (out > 0) {
+      return out;
+    }
+    return 0;
+  };
+
+  Deadline.getPerformance = function getPerformance() {
+    if (perf === undefined) {
+      perf = !!(global$1.performance && global$1.performance.now && typeof global$1.performance.now === 'function');
+    }
+    return perf;
+  };
+
+  return Deadline;
+}();
+
+var test = function test() {
+  return !browser && global$1 && typeof global$1.setImmediate === 'function';
+};
+
+var install = function install(func) {
+  return function () {
+    return global$1.setImmediate(function () {
+      return func(new Deadline());
+    });
+  };
+};
+
+var setImmediate = Object.freeze({
+	test: test,
+	install: install
+});
+
+// The test against `importScripts` prevents this implementation from being installed inside a web worker,
+// where `global.postMessage` means something completely different and can't be used for this purpose.
+function test$1() {
+  if (!global$1.postMessage || global$1.importScripts) {
+    return false;
+  }
+  if (global$1.setImmediate) {
+    // we can only get here in IE10
+    // which doesn't handel postMessage well
+    return false;
+  }
+  var postMessageIsAsynchronous = true;
+  var oldOnMessage = global$1.onmessage;
+  global$1.onmessage = function () {
+    postMessageIsAsynchronous = false;
+  };
+  global$1.postMessage('', '*');
+  global$1.onmessage = oldOnMessage;
+
+  return postMessageIsAsynchronous;
+}
+
+function install$1(func) {
+  var codeWord = 'macrotask' + Math.random();
+  function globalMessage(event) {
+    if (event.source === global$1 && event.data === codeWord) {
+      func(new Deadline());
+    }
+  }
+  if (global$1.addEventListener) {
+    global$1.addEventListener('message', globalMessage, false);
+  } else {
+    global$1.attachEvent('onmessage', globalMessage);
+  }
+  return function () {
+    global$1.postMessage(codeWord, '*');
+  };
+}
+
+var postMessage = Object.freeze({
+	test: test$1,
+	install: install$1
+});
+
+function test$2() {
+  if (global$1.setImmediate) {
+    // we can only get here in IE10
+    // which doesn't handel postMessage well
+    return false;
+  }
+  return typeof global$1.MessageChannel !== 'undefined';
+}
+
+function install$2(func) {
+  var channel = new global$1.MessageChannel();
+  channel.port1.onmessage = function () {
+    return func(new Deadline());
+  };
+  return function () {
+    channel.port2.postMessage(0);
+  };
+}
+
+var messageChannel = Object.freeze({
+	test: test$2,
+	install: install$2
+});
+
+var test$3 = function test$3() {
+  return 'document' in global$1 && 'onreadystatechange' in global$1.document.createElement('script');
+};
+
+var install$3 = function install$3(handle) {
+  return function () {
+
+    // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
+    // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
+    var scriptEl = global$1.document.createElement('script');
+    scriptEl.onreadystatechange = function () {
+      handle(new Deadline());
+
+      scriptEl.onreadystatechange = null;
+      scriptEl.parentNode.removeChild(scriptEl);
+      scriptEl = null;
+    };
+    global$1.document.documentElement.appendChild(scriptEl);
+
+    return handle;
+  };
+};
+
+var stateChange = Object.freeze({
+	test: test$3,
+	install: install$3
+});
+
+var test$4 = function test$4() {
+  return true;
+};
+
+function install$4(t) {
+  return function () {
+    setTimeout(function () {
+      t(new Deadline());
+    }, 0);
+  };
+}
+
+var timeout = Object.freeze({
+	test: test$4,
+	install: install$4
+});
+
+var test$5 = function test$5() {
+  return typeof global$1.requestIdleCallback === 'function';
+};
+var install$5 = function install$5(func) {
+  return function () {
+    return global$1.requestIdleCallback(func);
+  };
+};
+
+var idleCallback = Object.freeze({
+	test: test$5,
+	install: install$5
+});
+
+var types = [setImmediate, idleCallback, postMessage, messageChannel, stateChange, timeout];
+var creatNextTick = function (drainQueue) {
+  for (var _iterator = types, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+    var _ref;
+
+    if (_isArray) {
+      if (_i >= _iterator.length) break;
+      _ref = _iterator[_i++];
+    } else {
+      _i = _iterator.next();
+      if (_i.done) break;
+      _ref = _i.value;
+    }
+
+    var type = _ref;
+
+    if (type.test()) {
+      return type.install(drainQueue);
+    }
+  }
+};
+
 var CancelToken = function CancelToken() {
   classCallCheck(this, CancelToken);
 };
@@ -495,6 +532,7 @@ var List = function () {
 var list = new List();
 var inProgress = false;
 var nextTick = void 0;
+
 function drainQueue(idleDeadline) {
   if (!list.length) {
     inProgress = false;

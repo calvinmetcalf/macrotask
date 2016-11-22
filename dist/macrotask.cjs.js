@@ -2,9 +2,36 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+let perf;
+
+class Deadline {
+  constructor(limit = 10) {
+    this.limit = limit;
+    this.performance = Deadline.getPerformance();
+    this.now = this.getTime();
+  }
+  getTime() {
+    return this.performance ? global.performance.now() : Date.now();
+  }
+  timeRemaining() {
+    const out = this.limit  - (this.getTime() - this.now);
+    if (out > 0) {
+      return out;
+    }
+    return 0;
+  }
+  static getPerformance() {
+    if (perf === undefined) {
+      perf = !!(global.performance && global.performance.now && typeof global.performance.now === 'function');
+    }
+    return perf;
+  }
+
+}
+
 const test = () => !process.browser && global && typeof global.setImmediate === 'function';
 
-const install = func => () => global.setImmediate(func);
+const install = func => () => global.setImmediate(()=>func(new Deadline()));
 
 
 var setImmediate = Object.freeze({
@@ -14,7 +41,6 @@ var setImmediate = Object.freeze({
 
 // The test against `importScripts` prevents this implementation from being installed inside a web worker,
 // where `global.postMessage` means something completely different and can't be used for this purpose.
-
 function test$1() {
   if (!global.postMessage || global.importScripts) {
     return false;
@@ -39,7 +65,7 @@ function install$1 (func) {
   var codeWord = 'macrotask' + Math.random();
   function globalMessage(event) {
     if (event.source === global && event.data === codeWord) {
-      func();
+      func(new Deadline());
     }
   }
   if (global.addEventListener) {
@@ -69,7 +95,7 @@ function test$2() {
 
 function install$2(func) {
   var channel = new global.MessageChannel();
-  channel.port1.onmessage = ()=>func();
+  channel.port1.onmessage = ()=>func(new Deadline());
   return function () {
     channel.port2.postMessage(0);
   };
@@ -90,7 +116,7 @@ const install$3 = handle => function () {
     // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
     var scriptEl = global.document.createElement('script');
     scriptEl.onreadystatechange = function () {
-      handle();
+      handle(new Deadline());
 
       scriptEl.onreadystatechange = null;
       scriptEl.parentNode.removeChild(scriptEl);
@@ -111,7 +137,9 @@ const test$4 =  () => true;
 
 function install$4(t) {
   return function () {
-    setTimeout(t, 0);
+    setTimeout(()=>{
+      t(new Deadline());
+    }, 0);
   };
 }
 
@@ -262,6 +290,7 @@ class List {
 const list = new List();
 let inProgress = false;
 let nextTick;
+
 function drainQueue(idleDeadline) {
   if (!list.length) {
     inProgress = false;
