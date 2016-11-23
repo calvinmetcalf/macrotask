@@ -1,6 +1,6 @@
 {
   "name": "macrotask",
-  "version": "2.7.3",
+  "version": "3.0.0",
   "description": "A cross browser macrotask library",
   "main": "dist/macrotask.cjs.js",
   "module": "dist/macrotask.js",
